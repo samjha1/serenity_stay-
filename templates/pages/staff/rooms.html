@@ -1,0 +1,121 @@
+{#
+  pages/staff/rooms.html
+  ───────────────────────
+  Room inventory and status management. Admin can add and delete rooms;
+  all staff with access can update individual room status.
+
+  Context variables: rooms (list), role (str)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Room Management{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'rooms' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <h1 class="dash-title">Room Management</h1>
+    </div>
+
+    {# ── Add Room form (admin only) ── #}
+    {% if role == 'admin' %}
+    <div class="dash-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Add Room</h3></div>
+      <form method="POST" action="{{ url_for('staff.add_room') }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Room Number</label>
+            <input class="form-input" type="text" name="room_number" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Room Type</label>
+            <select class="form-input" name="room_type" required>
+              <option value="standard">Standard</option>
+              <option value="deluxe">Deluxe</option>
+              <option value="suite">Suite</option>
+              <option value="villa">Villa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Floor</label>
+            <input class="form-input" type="number" name="floor" min="1" value="1" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Capacity</label>
+            <input class="form-input" type="number" name="capacity" min="1" value="2" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Price / Night (₹)</label>
+            <input class="form-input" type="number" step="0.01" min="1" name="price_per_night" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image</label>
+            <select class="form-input" name="image_path" required>
+              <option value="images/room1.jpg">Standard</option>
+              <option value="images/room3.jpg">Deluxe</option>
+              <option value="images/room5.jpg">Suite</option>
+              <option value="images/room7.jpg">Villa</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" name="description" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amenities (comma separated)</label>
+          <input class="form-input" type="text" name="amenities" />
+        </div>
+        <button type="submit" class="btn btn-primary">Add Room</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {# ── Room status grid ── #}
+    <div class="rooms-status-grid">
+      {% for room in rooms %}
+      <div class="room-status-card rs-{{ room.status }}">
+
+        <div class="rsc-header">
+          <span class="rsc-number">{{ room.room_number }}</span>
+          <span class="badge badge-{{ room.status }}">{{ room.status.title() }}</span>
+        </div>
+        <div class="rsc-type">{{ room.room_type.title() }} — Floor {{ room.floor }}</div>
+        <div class="rsc-price">₹{{ "%.0f"|format(room.price_per_night) }}/night</div>
+
+        {# Inline status changer #}
+        <form method="POST"
+              action="{{ url_for('staff.update_room', room_id=room.id) }}"
+              class="rsc-form">
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="{{ room.status }}" selected disabled>{{ room.status.title() }}</option>
+            <option value="available">Available</option>
+            <option value="occupied">Occupied</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </form>
+
+        {# Delete button (admin only) #}
+        {% if role == 'admin' %}
+        <form method="POST"
+              action="{{ url_for('staff.delete_room', room_id=room.id) }}"
+              onsubmit="return confirm('Delete room {{ room.room_number }}?')">
+          <button type="submit" class="btn btn-outline btn-full">Remove Room</button>
+        </form>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{#
+  components/public_navbar.html
+  ──────────────────────────────
+  Top navigation bar displayed on the public-facing landing page (index).
+  Includes links to page sections and auth entry points.
+#}
+
+<nav class="navbar" id="mainNav">
+
+  <div class="nav-brand">
+    <span class="brand-icon">✦</span>
+    <span class="brand-name">Serenity Stay</span>
+  </div>
+
+  <ul class="nav-links">
+    <li><a href="#home"    class="nav-link">Home</a></li>
+    <li><a href="#rooms"   class="nav-link">Rooms</a></li>
+    <li><a href="#instay"  class="nav-link">InStay</a></li>
+    <li><a href="#contact" class="nav-link">Contact</a></li>
+    <li><a href="{{ url_for('auth.login') }}"    class="nav-btn">Sign In</a></li>
+    <li><a href="{{ url_for('auth.register') }}" class="nav-btn nav-btn-primary">Book Now</a></li>
+  </ul>
+
+  <button class="nav-toggle" onclick="toggleMobileNav()">&#9776;</button>
+
+</nav>

@@ -1,0 +1,240 @@
+{#
+  pages/staff/dashboard.html
+  ───────────────────────────
+  Role-aware staff overview. Content blocks are conditionally rendered
+  based on the logged-in staff member's role:
+    - admin/frontdesk → room stats, recent bookings, activities
+    - admin/kitchen   → food order queue
+    - admin/housekeeping → service request queue
+
+  Context variables: stats (dict), role (string alias for current_user.role)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'dashboard' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    {# ── Page header ── #}
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Staff Dashboard</h1>
+        <p class="dash-sub">{{ current_user.role.title() }} Portal — Real-time overview</p>
+      </div>
+      <span class="role-badge-large">{{ current_user.role.upper() }}</span>
+    </div>
+
+    {# ═══════════════════════════════════════
+       Front Desk / Admin Section
+       ═══════════════════════════════════════ #}
+    {% if role in ('admin', 'frontdesk') %}
+
+    {# Occupancy & booking stats #}
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon green">🛏</div><div class="stat-info"><span class="stat-num">{{ stats.available_rooms }}</span>  <span class="stat-label">Available Rooms</span></div></div>
+      <div class="stat-card"><div class="stat-icon red">🏨</div>  <div class="stat-info"><span class="stat-num">{{ stats.occupied_rooms }}</span>    <span class="stat-label">Occupied</span></div></div>
+      <div class="stat-card"><div class="stat-icon yellow">📋</div><div class="stat-info"><span class="stat-num">{{ stats.checked_in }}</span>         <span class="stat-label">Checked In</span></div></div>
+      <div class="stat-card"><div class="stat-icon blue">📅</div>  <div class="stat-info"><span class="stat-num">{{ stats.confirmed_bookings }}</span><span class="stat-label">Confirmed</span></div></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-info"><span class="stat-num">{{ stats.pending_activities }}</span><span class="stat-label">Pending Activities</span></div></div>
+    </div>
+
+    {# Admin-only financial & housekeeping stats #}
+    {% if role == 'admin' %}
+    <div class="stats-row">
+      <div class="stat-card accent"><div class="stat-icon">💰</div><div class="stat-info"><span class="stat-num">₹{{ stats.total_revenue }}</span><span class="stat-label">Revenue (Paid)</span></div></div>
+      <div class="stat-card">       <div class="stat-icon">👥</div><div class="stat-info"><span class="stat-num">{{ stats.total_guests }}</span>      <span class="stat-label">Total Guests</span></div></div>
+      <div class="stat-card">       <div class="stat-icon yellow">🧹</div><div class="stat-info"><span class="stat-num">{{ stats.cleaning_rooms }}</span>   <span class="stat-label">In Cleaning</span></div></div>
+      <div class="stat-card">       <div class="stat-icon red">🔧</div>   <div class="stat-info"><span class="stat-num">{{ stats.maintenance_rooms }}</span><span class="stat-label">Maintenance</span></div></div>
+    </div>
+    {% endif %}
+
+    {# Recent bookings table #}
+    <div class="dash-card">
+      <div class="card-header">
+        <h3>Recent Bookings</h3>
+        <a href="{{ url_for('staff.bookings') }}" class="card-link">View All</a>
+      </div>
+      {% if stats.recent_bookings %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for b in stats.recent_bookings %}
+            <tr>
+              <td>#{{ b.id }}</td>
+              <td>{{ b.guest.name }}</td>
+              <td>{{ b.room.room_number }}</td>
+              <td>{{ b.check_in.strftime('%d %b') }}</td>
+              <td>{{ b.check_out.strftime('%d %b') }}</td>
+              <td><span class="badge badge-{{ b.status }}">{{ b.status.replace('_', ' ').title() }}</span></td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.update_booking', booking_id=b.id) }}"
+                      style="display:inline">
+                  <select name="status" class="mini-select" onchange="this.form.submit()">
+                    <option value="">Change...</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="checked_in">Check In</option>
+                    <option value="checked_out">Check Out</option>
+                    <option value="cancelled">Cancel</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No bookings yet.</p></div>
+      {% endif %}
+    </div>
+
+    {# Activity bookings summary #}
+    <div class="dash-card">
+      <div class="card-header">
+        <h3>Activity Bookings</h3>
+        <a href="{{ url_for('staff.activities') }}" class="card-link">View All</a>
+      </div>
+      {% if stats.activities %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Guest</th><th>Activity</th><th>Date</th><th>Guests</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for a in stats.activities %}
+            <tr>
+              <td>#{{ a.id }}</td>
+              <td>{{ a.guest.name }}</td>
+              <td>{{ a.activity_type }}</td>
+              <td>{{ a.preferred_date.strftime('%d %b') }} {{ a.preferred_time }}</td>
+              <td>{{ a.guests_count }}</td>
+              <td><span class="badge badge-{{ a.status }}">{{ a.status.title() }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No activity bookings.</p></div>
+      {% endif %}
+    </div>
+
+    {% endif %}{# end admin/frontdesk block #}
+
+    {# ═══════════════════════════════════════
+       Kitchen / Admin Section — Food Orders
+       ═══════════════════════════════════════ #}
+    {% if role in ('admin', 'kitchen') %}
+    <div class="dash-card">
+      <div class="card-header">
+        <h3>Food Orders</h3>
+        <div class="card-stats">
+          <span class="badge badge-pending">{{ stats.pending_orders }} Pending</span>
+          <span class="badge badge-preparing">{{ stats.preparing_orders }} Preparing</span>
+        </div>
+        <a href="{{ url_for('staff.food_orders') }}" class="card-link">View All</a>
+      </div>
+      {% if stats.food_orders %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Guest</th><th>Amount</th><th>Status</th><th>Time</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for o in stats.food_orders %}
+            <tr>
+              <td>#{{ o.id }}</td>
+              <td>{{ o.guest.name }}</td>
+              <td>₹{{ "%.0f"|format(o.total_amount) }}</td>
+              <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+              <td>{{ o.created_at.strftime('%H:%M') }}</td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.update_food_order', order_id=o.id) }}"
+                      style="display:inline">
+                  <select name="status" class="mini-select" onchange="this.form.submit()">
+                    <option value="">Change...</option>
+                    <option value="pending">Pending</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="ready">Ready</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No food orders.</p></div>
+      {% endif %}
+    </div>
+    {% endif %}{# end kitchen block #}
+
+    {# ═══════════════════════════════════════
+       Housekeeping / Admin — Service Requests
+       ═══════════════════════════════════════ #}
+    {% if role in ('admin', 'housekeeping') %}
+    <div class="dash-card">
+      <div class="card-header">
+        <h3>Service Requests</h3>
+        <div class="card-stats">
+          <span class="badge badge-pending">{{ stats.pending_requests }} Pending</span>
+          <span class="badge badge-in_progress">{{ stats.inprogress_requests }} In Progress</span>
+        </div>
+        <a href="{{ url_for('staff.service_requests') }}" class="card-link">View All</a>
+      </div>
+      {% if stats.service_requests %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Guest</th><th>Type</th><th>Priority</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for r in stats.service_requests %}
+            <tr>
+              <td>#{{ r.id }}</td>
+              <td>{{ r.guest.name }}</td>
+              <td>{{ r.service_type.replace('_', ' ').title() }}</td>
+              <td><span class="badge badge-{{ r.priority }}">{{ r.priority.title() }}</span></td>
+              <td><span class="badge badge-{{ r.status }}">{{ r.status.replace('_', ' ').title() }}</span></td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.update_service_request', req_id=r.id) }}"
+                      style="display:inline">
+                  <select name="status" class="mini-select" onchange="this.form.submit()">
+                    <option value="">Change...</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No service requests.</p></div>
+      {% endif %}
+    </div>
+    {% endif %}{# end housekeeping block #}
+
+  </main>
+</div>
+{% endblock %}

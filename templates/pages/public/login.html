@@ -1,0 +1,104 @@
+{#
+  pages/public/login.html
+  ────────────────────────
+  Split-panel sign-in page. Left side: resort image with tagline.
+  Right side: tabbed login form (Guest / Staff).
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+
+  {# ── Left decorative panel ── #}
+  <div class="auth-left">
+    <img src="{{ url_for('static', filename='images/hero.png') }}"
+         alt="Resort" class="auth-bg-img" />
+    <div class="auth-overlay"></div>
+    <div class="auth-left-content">
+      <a href="{{ url_for('main.index') }}" class="auth-logo">
+        <span class="brand-icon">✦</span>
+        <span class="brand-name">Serenity Stay</span>
+      </a>
+      <blockquote class="auth-quote">
+        "Every stay is a story waiting to be written — yours begins here."
+      </blockquote>
+    </div>
+  </div>
+
+  {# ── Right form panel ── #}
+  <div class="auth-right">
+    <div class="auth-box">
+      <h2 class="auth-title">Welcome Back</h2>
+      <p class="auth-sub">Sign in to your account to continue</p>
+
+      {# Guest / Staff tab switcher #}
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchTab(this, 'guest-tab')">Guest</button>
+        <button class="tab-btn"        onclick="switchTab(this, 'staff-tab')">Staff</button>
+      </div>
+
+      <form method="POST"
+            action="{{ url_for('auth.login') }}"
+            id="loginForm"
+            onsubmit="showLoading()">
+
+        <input type="hidden" name="user_type" id="user_type" value="guest" />
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" class="form-input"
+                 placeholder="you@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            <input type="password" name="password" class="form-input"
+                   placeholder="••••••••" id="pwdField" required />
+            <button type="button" class="pwd-toggle" onclick="togglePwd()">👁</button>
+          </div>
+        </div>
+
+        <div id="guest-tab">
+          <p class="tab-hint">Sign in as a hotel guest to manage your stay.</p>
+        </div>
+        <div id="staff-tab" style="display:none">
+          <p class="tab-hint staff-hint">Staff portal: Admin, Front Desk, Kitchen, Housekeeping.</p>
+        </div>
+
+        <label class="remember-row">
+          <input type="checkbox" name="remember" /> Keep me signed in
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+{% block extra_js %}
+<script>
+  function switchTab(btn, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('guest-tab').style.display = 'none';
+    document.getElementById('staff-tab').style.display = 'none';
+    document.getElementById(tabId).style.display = 'block';
+    document.getElementById('user_type').value = (tabId === 'staff-tab') ? 'staff' : 'guest';
+  }
+
+  function togglePwd() {
+    var f = document.getElementById('pwdField');
+    f.type = (f.type === 'password') ? 'text' : 'password';
+  }
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,94 @@
+{#
+  pages/staff/service_requests.html
+  ───────────────────────────────────
+  Housekeeping / admin view of all guest service requests.
+  Filterable by status and service type. Staff update each request inline.
+
+  Context variables: requests (list), status_filter (str), service_filter (str)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Service Requests{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'service_requests' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <h1 class="dash-title">Service Requests</h1>
+    </div>
+
+    {# ── Filter bar: status + service type ── #}
+    <div class="filter-bar">
+      <form method="GET" class="filter-form">
+        <div class="filter-item">
+          <label>Status</label>
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for s in ['pending', 'in_progress', 'completed'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>
+              {{ s.replace('_', ' ').title() }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Type</label>
+          <select name="type" class="form-input" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            {% for t in ['housekeeping', 'maintenance', 'complaint', 'amenities', 'transport', 'other'] %}
+            <option value="{{ t }}" {% if service_filter == t %}selected{% endif %}>
+              {{ t.title() }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+
+    {# ── Request cards grid ── #}
+    <div class="orders-grid">
+      {% for r in requests %}
+      <div class="order-card oc-{{ r.status }}">
+
+        <div class="oc-header">
+          <span class="oc-id">#{{ r.id }}</span>
+          <span class="badge badge-{{ r.status }}">{{ r.status.replace('_', ' ').title() }}</span>
+        </div>
+
+        <div class="oc-guest">{{ r.guest.name }}</div>
+        <div class="oc-type">{{ r.service_type.replace('_', ' ').title() }}</div>
+        <div class="oc-desc">{{ r.description }}</div>
+
+        <div class="oc-meta">
+          <span class="badge badge-{{ r.priority }}">{{ r.priority.title() }} Priority</span>
+          <span class="oc-time">{{ r.created_at.strftime('%d %b %H:%M') }}</span>
+        </div>
+
+        {# Inline status update #}
+        <form method="POST"
+              action="{{ url_for('staff.update_service_request', req_id=r.id) }}"
+              class="oc-form">
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="{{ r.status }}" selected disabled>
+              {{ r.status.replace('_', ' ').title() }}
+            </option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </form>
+
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No service requests found.</p></div>
+      {% endfor %}
+    </div>
+
+  </main>
+</div>
+{% endblock %}

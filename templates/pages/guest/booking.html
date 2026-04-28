@@ -1,0 +1,141 @@
+{#
+  pages/guest/booking.html
+  ─────────────────────────
+  Room reservation form with live price summary calculator.
+  Displays detailed room info alongside the booking form.
+
+  Context variables: room, today, check_in, check_out
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Book Room {{ room.room_number }}{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'rooms' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Book Room {{ room.room_number }}</h1>
+        <p class="dash-sub">
+          {{ room.room_type.title() }} — ₹{{ "%.0f"|format(room.price_per_night) }} per night
+        </p>
+      </div>
+      <a href="{{ url_for('main.rooms') }}" class="btn btn-outline">← Back</a>
+    </div>
+
+    <div class="booking-layout">
+
+      {# ── Reservation form ── #}
+      <div class="booking-form-wrap">
+        <div class="glass-card">
+          <h3>Reservation Details</h3>
+          <form method="POST"
+                action="{{ url_for('main.book_room', room_id=room.id) }}"
+                onsubmit="calcAndSubmit(event)">
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Check-in Date</label>
+                <input type="date" name="check_in" id="checkIn" class="form-input"
+                       min="{{ today }}" value="{{ check_in }}" required onchange="calcTotal()" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Check-out Date</label>
+                <input type="date" name="check_out" id="checkOut" class="form-input"
+                       min="{{ today }}" value="{{ check_out }}" required onchange="calcTotal()" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Number of Guests (Max: {{ room.capacity }})</label>
+              <select name="guests" class="form-input">
+                {% for i in range(1, room.capacity + 1) %}
+                <option value="{{ i }}">{{ i }} Guest{% if i > 1 %}s{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Special Requests (Optional)</label>
+              <textarea name="special_requests" class="form-input" rows="3"
+                        placeholder="Any special requests or preferences..."></textarea>
+            </div>
+
+            {# Live price breakdown — revealed after both dates are selected #}
+            <div class="price-summary" id="priceSummary" style="display:none">
+              <h4>Price Summary</h4>
+              <div class="price-row">
+                <span>Room Rate</span>
+                <span>₹{{ "%.0f"|format(room.price_per_night) }} × <span id="nightCount">0</span> nights</span>
+              </div>
+              <div class="price-row"><span>Subtotal</span><span id="subtotalAmt">₹0</span></div>
+              <div class="price-row"><span>Tax (12%)</span><span id="taxAmt">₹0</span></div>
+              <div class="price-row total"><span>Total</span><span id="totalAmt">₹0</span></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Confirm Booking</button>
+          </form>
+        </div>
+      </div>
+
+      {# ── Room details panel ── #}
+      <div class="booking-room-info">
+        <div class="glass-card">
+          {% set img = (room.image_path or 'images/room1.jpg')
+            |replace('images/room-standard.svg', 'images/room1.jpg')
+            |replace('images/room-deluxe.svg',   'images/room3.jpg')
+            |replace('images/room-suite.svg',    'images/room5.jpg')
+            |replace('images/room-villa.svg',    'images/room7.jpg') %}
+          <img src="{{ url_for('static', filename=img) }}"
+               alt="Room" class="booking-room-img" />
+          <h3>Room {{ room.room_number }}</h3>
+          <div class="rcd-meta">
+            <span>🏢 Floor {{ room.floor }}</span>
+            <span>👥 Max {{ room.capacity }} guests</span>
+          </div>
+          <p>{{ room.description or 'A beautifully appointed room with premium amenities.' }}</p>
+          {% if room.amenities %}
+          <div class="room-features">
+            {% for a in room.amenities.split(',') %}
+            <span class="feature-tag">{{ a.strip() }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>{# end booking-layout #}
+
+  </main>
+</div>
+
+{% block extra_js %}
+<script>
+  var pricePerNight = Number("{{ room.price_per_night or 0 }}");
+
+  function calcTotal() {
+    var ci   = document.getElementById('checkIn').value;
+    var co   = document.getElementById('checkOut').value;
+    if (!ci || !co) return;
+    var diff = (new Date(co) - new Date(ci)) / (1000 * 60 * 60 * 24);
+    if (diff <= 0) return;
+    var sub   = diff * pricePerNight;
+    var tax   = sub * 0.12;
+    var total = sub + tax;
+    document.getElementById('nightCount').textContent  = diff;
+    document.getElementById('subtotalAmt').textContent = '₹' + sub.toFixed(0);
+    document.getElementById('taxAmt').textContent      = '₹' + tax.toFixed(0);
+    document.getElementById('totalAmt').textContent    = '₹' + total.toFixed(0);
+    document.getElementById('priceSummary').style.display = 'block';
+  }
+
+  function calcAndSubmit(e) { showLoading(); }
+</script>
+{% endblock %}
+
+{% endblock %}

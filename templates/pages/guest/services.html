@@ -1,0 +1,137 @@
+{#
+  pages/guest/services.html
+  ──────────────────────────
+  Guest service request form (housekeeping, maintenance, transport, etc.)
+  alongside a history of past requests.
+
+  Context variables: requests, active_booking
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Services{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'services' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Guest Services</h1>
+        <p class="dash-sub">Request housekeeping, maintenance, and more.</p>
+      </div>
+    </div>
+
+    <div class="guest-hero-card">
+      <img src="{{ url_for('static', filename='images/Screenshot 2026-04-21 002709.png') }}"
+           alt="Guest Services" />
+      <div>
+        <h3>Support on demand</h3>
+        <p>Service requests are sent instantly to the relevant operations teams.</p>
+      </div>
+    </div>
+
+    <div class="services-layout">
+
+      <div class="service-form-wrap">
+
+        {# ── New request form ── #}
+        <div class="glass-card">
+          <h3>New Service Request</h3>
+          <form method="POST"
+                action="{{ url_for('main.request_service') }}"
+                onsubmit="showLoading()">
+
+            {# Link request to active booking when guest is checked in #}
+            {% if active_booking %}
+            <input type="hidden" name="booking_id" value="{{ active_booking.id }}" />
+            <div class="active-stay-mini">
+              <span>🏨 Linked to Room {{ active_booking.room.room_number }}</span>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+              <label class="form-label">Service Type</label>
+              <select name="service_type" class="form-input" required>
+                <option value="">Select a service...</option>
+                <option value="housekeeping">🧹 Housekeeping</option>
+                <option value="maintenance">🔧 Maintenance</option>
+                <option value="complaint">⚠️ Complaint</option>
+                <option value="amenities">🛁 Extra Amenities</option>
+                <option value="transport">🚗 Transport</option>
+                <option value="other">💬 Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-input">
+                <option value="low">Low</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-input" rows="4"
+                        placeholder="Describe your request in detail..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Submit Request</button>
+          </form>
+        </div>
+
+        {# ── Service type quick-reference tiles ── #}
+        <div class="service-types-grid">
+          {% set stypes = [
+            { "icon": "🧹", "label": "Housekeeping", "desc": "Room cleaning, linen change" },
+            { "icon": "🔧", "label": "Maintenance",  "desc": "Plumbing, electrical, AC" },
+            { "icon": "🛁", "label": "Amenities",    "desc": "Extra towels, toiletries" },
+            { "icon": "🚗", "label": "Transport",    "desc": "Taxi, airport transfer" },
+          ] %}
+          {% for s in stypes %}
+          <div class="stype-card">
+            <div class="stype-icon">{{ s.icon }}</div>
+            <div><strong>{{ s.label }}</strong><p>{{ s.desc }}</p></div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+
+      {# ── Request history ── #}
+      <div class="service-history">
+        <div class="dash-card">
+          <div class="card-header"><h3>Your Requests</h3></div>
+          {% if requests %}
+          <div class="request-list">
+            {% for r in requests %}
+            <div class="request-item ri-{{ r.status }}">
+              <div class="ri-header">
+                <span class="ri-type">{{ r.service_type.replace('_', ' ').title() }}</span>
+                <span class="badge badge-{{ r.status }}">{{ r.status.replace('_', ' ').title() }}</span>
+              </div>
+              <p class="ri-desc">{{ r.description }}</p>
+              <div class="ri-meta">
+                <span class="badge badge-{{ r.priority }}">{{ r.priority.title() }} Priority</span>
+                <span class="ri-date">{{ r.created_at.strftime('%d %b %Y %H:%M') }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state"><p>No service requests yet.</p></div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+{% endblock %}

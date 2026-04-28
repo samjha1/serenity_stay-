@@ -1,0 +1,91 @@
+{#
+  pages/staff/activities.html
+  ────────────────────────────
+  Activity booking queue for front desk / admin. Staff can filter
+  by status and update each activity booking inline.
+
+  Context variables: activities (list), status_filter (str)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Activity Bookings{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'activities' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <h1 class="dash-title">Activity Bookings</h1>
+    </div>
+
+    {# ── Status filter ── #}
+    <div class="filter-bar">
+      <form method="GET" class="filter-form">
+        <div class="filter-item">
+          <label>Status</label>
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for s in ['pending', 'confirmed', 'completed', 'cancelled'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>
+              {{ s.title() }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+
+    {# ── Activities table ── #}
+    <div class="dash-card">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Guest</th>
+              <th>Activity</th>
+              <th>Date / Time</th>
+              <th>Guests</th>
+              <th>Notes</th>
+              <th>Status</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in activities %}
+            <tr>
+              <td>#{{ a.id }}</td>
+              <td>{{ a.guest.name }}<br /><small>{{ a.guest.email }}</small></td>
+              <td>{{ a.activity_type }}</td>
+              <td>{{ a.preferred_date.strftime('%d %b %Y') }} {{ a.preferred_time }}</td>
+              <td>{{ a.guests_count }}</td>
+              <td>{{ a.notes or '—' }}</td>
+              <td><span class="badge badge-{{ a.status }}">{{ a.status.title() }}</span></td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.update_activity', activity_id=a.id) }}">
+                  <select name="status" class="mini-select" onchange="this.form.submit()">
+                    <option value="">Change...</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="empty-row">No activities found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

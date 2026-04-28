@@ -1,0 +1,150 @@
+{#
+  pages/staff/food_orders.html
+  ─────────────────────────────
+  Kitchen dashboard: incoming food order cards with status updates,
+  plus a menu management panel for adding / toggling / deleting dishes.
+
+  Previously named food.html — renamed for clarity since it is a staff view,
+  not a guest-facing food page.
+
+  Context variables: orders_data (list of dicts), menu_items (list)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Kitchen Dashboard{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'food_orders' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <h1 class="dash-title">Kitchen Orders</h1>
+      <p class="dash-sub">Manage and update live food orders</p>
+    </div>
+
+    {# ── Incoming order cards ── #}
+    <div class="dash-card">
+      <div class="card-header"><h3>Incoming Orders</h3></div>
+
+      {% if orders_data %}
+      <div class="orders-grid">
+        {% for od in orders_data %}
+        <div class="order-card">
+
+          {# Order header: ID + status badge #}
+          <div class="order-header">
+            <div>
+              <h4>Order #{{ od.order.id }}</h4>
+              <p class="order-time">{{ od.order.created_at.strftime('%d %b %H:%M') }}</p>
+            </div>
+            <span class="badge badge-{{ od.order.status }}">
+              {{ od.order.status.title() }}
+            </span>
+          </div>
+
+          {# Ordered items list #}
+          <div class="order-items">
+            {% if od["items"] %}
+              {% for item in od["items"] %}
+              <div class="order-item">
+                <span>{{ item.name }}</span>
+                <span>×{{ item.qty }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+            <p class="empty-text">No items</p>
+            {% endif %}
+          </div>
+
+          {# Footer: total + status update selector #}
+          <div class="order-footer">
+            <strong>₹{{ "%.0f"|format(od.order.total_amount) }}</strong>
+            <form method="POST"
+                  action="{{ url_for('staff.update_food_order', order_id=od.order.id) }}">
+              <select name="status" class="form-input">
+                <option value="pending"    {% if od.order.status == 'pending'    %}selected{% endif %}>Pending</option>
+                <option value="preparing"  {% if od.order.status == 'preparing'  %}selected{% endif %}>Preparing</option>
+                <option value="completed"  {% if od.order.status == 'completed'  %}selected{% endif %}>Completed</option>
+              </select>
+              <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </form>
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No food orders yet.</p></div>
+      {% endif %}
+    </div>
+
+    {# ── Menu Management panel ── #}
+    <div class="dash-card" style="margin-top:2rem">
+      <div class="card-header"><h3>Menu Management</h3></div>
+
+      {# Add new menu item form #}
+      <form method="POST"
+            action="{{ url_for('staff.add_menu_item') }}"
+            class="form-grid">
+        <input  type="text"   name="name"        placeholder="Item name"   required class="form-input" />
+        <input  type="text"   name="description" placeholder="Description"          class="form-input" />
+        <select name="category" class="form-input" required>
+          <option value="">Select Category</option>
+          <option value="starters">Starters</option>
+          <option value="main_course">Main Course</option>
+          <option value="desserts">Desserts</option>
+          <option value="beverages">Beverages</option>
+        </select>
+        <input  type="number" name="price" step="0.01" placeholder="Price" required class="form-input" />
+        <label class="checkbox-wrap">
+          <input type="checkbox" name="is_veg" /> Veg
+        </label>
+        <button type="submit" class="btn btn-primary">Add Item</button>
+      </form>
+
+      {# Existing menu items table #}
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="data-table">
+          <thead>
+            <tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for m in menu_items %}
+            <tr>
+              <td>{{ m.name }}</td>
+              <td>{{ m.category }}</td>
+              <td>₹{{ "%.0f"|format(m.price) }}</td>
+              <td>
+                {% if m.is_available %}
+                <span class="badge badge-success">Available</span>
+                {% else %}
+                <span class="badge badge-danger">Unavailable</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.toggle_menu_item', item_id=m.id) }}"
+                      style="display:inline">
+                  <button type="submit" class="btn btn-sm">Toggle</button>
+                </form>
+                <form method="POST"
+                      action="{{ url_for('staff.delete_menu_item', item_id=m.id) }}"
+                      style="display:inline"
+                      onsubmit="return confirm('Delete this dish from menu?')">
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

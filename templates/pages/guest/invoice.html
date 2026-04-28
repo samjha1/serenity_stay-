@@ -1,0 +1,115 @@
+{#
+  pages/guest/invoice.html
+  ─────────────────────────
+  Printable billing invoice for a completed or active booking.
+  Shows room charges, food orders, tax, and total.
+
+  Context variables: booking, invoice (may be None), food_orders
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Invoice #{{ booking.id }}{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'dashboard' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Invoice #{{ booking.id }}</h1>
+        <p class="dash-sub">Full billing details for your stay.</p>
+      </div>
+      <div>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline">← Back</a>
+        <button onclick="window.print()" class="btn btn-primary" style="margin-left:0.5rem">
+          🖨 Print
+        </button>
+      </div>
+    </div>
+
+    <div class="invoice-wrap">
+      <div class="glass-card invoice-card">
+
+        {# ── Invoice header: brand + meta ── #}
+        <div class="invoice-header">
+          <div class="invoice-brand">
+            <span class="brand-icon">✦</span>
+            <span class="brand-name">Serenity Stay</span>
+            <p>1 Serenity Boulevard, Karnataka 580001</p>
+          </div>
+          <div class="invoice-meta">
+            <div><strong>Invoice #</strong> INV-{{ "%05d"|format(booking.id) }}</div>
+            <div><strong>Date</strong> {{ booking.created_at.strftime('%d %b %Y') }}</div>
+            <div>
+              <strong>Status</strong>
+              <span class="badge badge-{{ invoice.status if invoice else 'unpaid' }}">
+                {{ (invoice.status if invoice else 'unpaid').title() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {# ── Guest billing address ── #}
+        <div class="invoice-guest">
+          <h4>Billed To</h4>
+          <p><strong>{{ current_user.name }}</strong></p>
+          <p>{{ current_user.email }}</p>
+          {% if current_user.phone %}<p>{{ current_user.phone }}</p>{% endif %}
+        </div>
+
+        {# ── Stay details ── #}
+        <div class="invoice-stay">
+          <h4>Stay Details</h4>
+          <div class="inv-row"><span>Room</span>     <span>{{ booking.room.room_number }} — {{ booking.room.room_type.title() }}</span></div>
+          <div class="inv-row"><span>Check-in</span> <span>{{ booking.check_in.strftime('%d %b %Y') }}</span></div>
+          <div class="inv-row"><span>Check-out</span><span>{{ booking.check_out.strftime('%d %b %Y') }}</span></div>
+          <div class="inv-row"><span>Duration</span> <span>{{ (booking.check_out - booking.check_in).days }} Night(s)</span></div>
+          <div class="inv-row"><span>Guests</span>   <span>{{ booking.guests }}</span></div>
+        </div>
+
+        {# ── Food orders line items (shown only if orders exist) ── #}
+        {% if food_orders %}
+        <div class="invoice-food">
+          <h4>Food Orders</h4>
+          {% for o in food_orders %}
+          <div class="inv-row">
+            <span>Order #{{ o.id }} ({{ o.created_at.strftime('%d %b') }})</span>
+            <span>₹{{ "%.0f"|format(o.total_amount) }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Charge breakdown and grand total ── #}
+        <div class="invoice-total">
+          {% if invoice %}
+          <div class="inv-row"><span>Room Charges</span>    <span>₹{{ "%.0f"|format(invoice.room_charges) }}</span></div>
+          <div class="inv-row"><span>Food Charges</span>    <span>₹{{ "%.0f"|format(invoice.food_charges) }}</span></div>
+          <div class="inv-row"><span>Service Charges</span> <span>₹{{ "%.0f"|format(invoice.service_charges) }}</span></div>
+          <div class="inv-row"><span>Tax (12%)</span>       <span>₹{{ "%.0f"|format(invoice.tax_amount) }}</span></div>
+          <div class="inv-row total-row">
+            <span><strong>Total Amount</strong></span>
+            <span><strong>₹{{ "%.0f"|format(invoice.total_amount) }}</strong></span>
+          </div>
+          {% else %}
+          <div class="inv-row total-row">
+            <span><strong>Total Amount</strong></span>
+            <span><strong>₹{{ "%.0f"|format(booking.total_amount) }}</strong></span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="invoice-note">
+          Thank you for choosing Serenity Stay. We hope your stay was exceptional!
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{#
+  pages/guest/food.html
+  ──────────────────────
+  Food order page. Guests browse the menu by category, add items to
+  an in-browser cart, then submit the order via a JSON POST.
+
+  Context variables: menu_by_category, orders, active_booking
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Food order{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'food' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Order Food</h1>
+        <p class="dash-sub">Add dishes from the kitchen menu to your cart and place an order.</p>
+      </div>
+    </div>
+
+    {# Active stay indicator #}
+    {% if active_booking %}
+    <div class="active-stay-mini" style="margin-bottom:1rem">
+      <span>🏨 Room {{ active_booking.room.room_number }} (Checked In)</span>
+    </div>
+    {% endif %}
+
+    <div class="dash-grid" style="grid-template-columns: 2fr 1fr;">
+
+      {# ── Menu panel ── #}
+      <div class="dash-card">
+        <div class="card-header"><h3>Menu</h3></div>
+
+        {% set category_images = {
+          "starters":    "images/pizza.jpg",
+          "main_course": "images/paneertika.jpg",
+          "desserts":    "images/brownie.jpg",
+          "beverages":   "images/soda.jpg"
+        } %}
+
+        {% if menu_by_category %}
+          {% for category, items in menu_by_category.items() %}
+          <div style="margin-bottom:1rem">
+            <h4 style="margin-bottom:0.75rem">{{ category.replace('_', ' ').title() }}</h4>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Image</th><th>Dish</th><th>Price</th><th>Type</th><th>Qty</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {% for item in items %}
+                  <tr>
+                    <td>
+                      <img class="dish-image"
+                           src="{{ url_for('static', filename='images/' ~ item.name ~ '.jpg') }}"
+                           data-base="{{ url_for('static', filename='images/' ~ item.name) }}"
+                           data-fallback="{{ url_for('static', filename=category_images.get(category, 'images/pizza.jpg')) }}"
+                           data-ext-index="0"
+                           onerror="resolveDishImage(this)"
+                           alt="{{ item.name }}"
+                           style="width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid #eee;" />
+                    </td>
+                    <td>
+                      <strong>{{ item.name }}</strong>
+                      {% if item.description %}
+                      <div class="dash-sub">{{ item.description }}</div>
+                      {% endif %}
+                    </td>
+                    <td>₹{{ "%.0f"|format(item.price) }}</td>
+                    <td>{{ "Veg" if item.is_veg else "Non-veg" }}</td>
+                    <td>
+                      <input type="number" min="1" value="1"
+                             id="qty-{{ item.id }}" class="form-input"
+                             style="max-width:80px" />
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-primary"
+                              onclick='addToCart({{ item.id }}, {{ item.name|tojson }}, {{ item.price }})'>
+                        Add to cart
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+        <div class="empty-state"><p>No dishes available right now.</p></div>
+        {% endif %}
+      </div>
+
+      {# ── Cart panel ── #}
+      <div class="dash-card">
+        <div class="card-header"><h3>Your Cart</h3></div>
+        <div id="cart-items" class="request-list"></div>
+        <div style="margin-top:1rem">
+          <strong>Total: ₹<span id="cart-total">0</span></strong>
+        </div>
+        <div class="form-group" style="margin-top:1rem">
+          <label class="form-label">Special Instructions</label>
+          <textarea id="order-instructions" class="form-input" rows="3"
+                    placeholder="Optional instructions"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary btn-full" onclick="placeOrder()">
+          Place Order
+        </button>
+      </div>
+
+    </div>
+
+    {# ── Past orders table ── #}
+    <div class="dash-card" style="margin-top:1.25rem">
+      <div class="card-header"><h3>Your Recent Orders</h3></div>
+      {% if orders %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Order</th><th>Amount</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody>
+            {% for o in orders %}
+            <tr>
+              <td>#{{ o.id }}</td>
+              <td>₹{{ "%.0f"|format(o.total_amount) }}</td>
+              <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+              <td>{{ o.created_at.strftime('%d %b %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No food orders yet.</p></div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+
+{% block extra_js %}
+<script>
+  const cart = {};
+  const dishImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+
+  function resolveDishImage(img) {
+    const currentIdx = parseInt(img.dataset.extIndex || '0', 10);
+    const nextIdx    = currentIdx + 1;
+    if (nextIdx < dishImageExtensions.length) {
+      img.dataset.extIndex = String(nextIdx);
+      img.src = `${img.dataset.base}${dishImageExtensions[nextIdx]}`;
+      return;
+    }
+    img.onerror = null;
+    img.src = img.dataset.fallback;
+  }
+
+  function renderCart() {
+    const cartItems = document.getElementById('cart-items');
+    const cartTotal = document.getElementById('cart-total');
+    const rows = Object.values(cart);
+    if (!rows.length) {
+      cartItems.innerHTML = '<p class="empty-text">Cart is empty.</p>';
+      cartTotal.textContent = '0';
+      return;
+    }
+    let total = 0;
+    cartItems.innerHTML = rows.map(i => {
+      const amount = i.price * i.qty;
+      total += amount;
+      return `<div class="request-item">
+        <div class="ri-header"><span>${i.name}</span><span>₹${amount.toFixed(0)}</span></div>
+        <div class="ri-meta"><span>Qty: ${i.qty}</span>
+          <button type="button" class="btn btn-sm" onclick="removeFromCart(${i.id})">Remove</button>
+        </div></div>`;
+    }).join('');
+    cartTotal.textContent = total.toFixed(0);
+  }
+
+  function addToCart(id, name, price) {
+    const qtyInput = document.getElementById(`qty-${id}`);
+    const qty = Math.max(1, parseInt(qtyInput.value || '1', 10));
+    if (!cart[id]) { cart[id] = { id, name, price, qty: 0 }; }
+    cart[id].qty += qty;
+    renderCart();
+  }
+
+  function removeFromCart(id) { delete cart[id]; renderCart(); }
+
+  async function placeOrder() {
+    const items = Object.values(cart).map(i => ({ id: i.id, name: i.name, qty: i.qty }));
+    if (!items.length) { alert('Please add dishes to cart.'); return; }
+
+    const bookingId    = {{ active_booking.id if active_booking else 'null' }};
+    const instructions = document.getElementById('order-instructions').value.trim();
+
+    const res  = await fetch("{{ url_for('main.place_order') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ booking_id: bookingId, instructions, items })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) { alert(data.message || 'Unable to place order.'); return; }
+    alert('Order placed successfully!');
+    window.location.reload();
+  }
+
+  renderCart();
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,99 @@
+{#
+  pages/staff/bookings.html
+  ──────────────────────────
+  Full booking list for front desk / admin with status filter and
+  inline status-update form for each row.
+
+  Context variables: bookings (list), status_filter (str)
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Manage Bookings{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'bookings' %}
+  {% include "components/staff_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Bookings Management</h1>
+      </div>
+    </div>
+
+    {# ── Status filter bar ── #}
+    <div class="filter-bar">
+      <form method="GET" class="filter-form">
+        <div class="filter-item">
+          <label>Status</label>
+          <select name="status" class="form-input" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for s in ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>
+              {{ s.replace('_', ' ').title() }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+
+    {# ── Bookings table ── #}
+    <div class="dash-card">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Guest</th>
+              <th>Room</th>
+              <th>Type</th>
+              <th>Check-in</th>
+              <th>Check-out</th>
+              <th>Guests</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bookings %}
+            <tr>
+              <td>#{{ b.id }}</td>
+              <td>{{ b.guest.name }}<br /><small>{{ b.guest.email }}</small></td>
+              <td>{{ b.room.room_number }}</td>
+              <td>{{ b.room.room_type.title() }}</td>
+              <td>{{ b.check_in.strftime('%d %b %Y') }}</td>
+              <td>{{ b.check_out.strftime('%d %b %Y') }}</td>
+              <td>{{ b.guests }}</td>
+              <td>₹{{ "%.0f"|format(b.total_amount) }}</td>
+              <td><span class="badge badge-{{ b.status }}">{{ b.status.replace('_', ' ').title() }}</span></td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('staff.update_booking', booking_id=b.id) }}"
+                      style="display:inline">
+                  <select name="status" class="mini-select" onchange="this.form.submit()">
+                    <option value="">Change...</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="checked_in">Check In</option>
+                    <option value="checked_out">Check Out</option>
+                    <option value="cancelled">Cancel</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="10" class="empty-row">No bookings found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+{% endblock %}

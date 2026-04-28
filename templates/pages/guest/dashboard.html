@@ -1,0 +1,196 @@
+{#
+  pages/guest/dashboard.html
+  ───────────────────────────
+  Main guest dashboard. Shows active stay, stats, and recent activity tables.
+
+  Context variables expected from route:
+    active_booking, bookings, food_orders, service_requests, activity_bookings
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}My Dashboard{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'dashboard' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    {# ── Page header ── #}
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Welcome back, {{ current_user.name.split()[0] }}! 👋</h1>
+        <p class="dash-sub">Here's an overview of your current stay and activities.</p>
+      </div>
+      <a href="{{ url_for('main.rooms') }}" class="btn btn-primary">+ Book a Room</a>
+    </div>
+
+    {# ── Hero banner ── #}
+    <div class="guest-hero-card">
+      <img src="{{ url_for('static', filename='images/hero.png') }}" alt="Guest Experience" />
+      <div>
+        <h3>Plan your day at Serenity</h3>
+        <p>Book adventure activities, track food orders, and enjoy personalized service in one place.</p>
+      </div>
+    </div>
+
+    {# ── Active stay card (shown only when guest is currently checked in) ── #}
+    {% if active_booking %}
+    <div class="active-stay-card">
+      <div class="stay-header">
+        <span>🏨 Active Stay</span>
+        <span class="stay-badge">Checked In</span>
+      </div>
+      <div class="stay-details">
+        <div><strong>Room</strong>     <span>{{ active_booking.room.room_number }} — {{ active_booking.room.room_type.title() }}</span></div>
+        <div><strong>Check-in</strong> <span>{{ active_booking.check_in.strftime('%d %b %Y') }}</span></div>
+        <div><strong>Check-out</strong><span>{{ active_booking.check_out.strftime('%d %b %Y') }}</span></div>
+        <div><strong>Guests</strong>   <span>{{ active_booking.guests }}</span></div>
+      </div>
+      <div class="stay-actions">
+        <a href="{{ url_for('main.food') }}"                             class="btn btn-sm btn-outline">Order Food</a>
+        <a href="{{ url_for('main.services') }}"                         class="btn btn-sm btn-outline">Request Service</a>
+        <a href="{{ url_for('main.invoice', booking_id=active_booking.id) }}" class="btn btn-sm btn-outline">View Invoice</a>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Quick stats row ── #}
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">🛏</div><div class="stat-info"><span class="stat-num">{{ bookings|length }}</span><span class="stat-label">Total Bookings</span></div></div>
+      <div class="stat-card"><div class="stat-icon">🍽</div><div class="stat-info"><span class="stat-num">{{ food_orders|length }}</span><span class="stat-label">Food Orders</span></div></div>
+      <div class="stat-card"><div class="stat-icon">🛎</div><div class="stat-info"><span class="stat-num">{{ service_requests|length }}</span><span class="stat-label">Service Requests</span></div></div>
+      <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-info"><span class="stat-num">{{ activity_bookings|length }}</span><span class="stat-label">Activities</span></div></div>
+    </div>
+
+    {# ── Data grid: recent bookings / orders / activities / service requests ── #}
+    <div class="dash-grid">
+
+      {# Recent Bookings #}
+      <div class="dash-card">
+        <div class="card-header">
+          <h3>Recent Bookings</h3>
+          <a href="{{ url_for('main.rooms') }}" class="card-link">+ New</a>
+        </div>
+        {% if bookings %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Invoice</th></tr></thead>
+            <tbody>
+              {% for b in bookings %}
+              <tr>
+                <td>{{ b.room.room_number }}</td>
+                <td>{{ b.check_in.strftime('%d %b') }}</td>
+                <td>{{ b.check_out.strftime('%d %b') }}</td>
+                <td><span class="badge badge-{{ b.status }}">{{ b.status.replace('_', ' ').title() }}</span></td>
+                <td><a href="{{ url_for('main.invoice', booking_id=b.id) }}" class="table-link">View</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <p>No bookings yet.</p>
+          <a href="{{ url_for('main.rooms') }}" class="btn btn-sm btn-primary">Book a Room</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Recent Food Orders #}
+      <div class="dash-card">
+        <div class="card-header">
+          <h3>Recent Food Orders</h3>
+          <a href="{{ url_for('main.food') }}" class="card-link">+ Order</a>
+        </div>
+        {% if food_orders %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Order #</th><th>Amount</th><th>Status</th><th>Time</th></tr></thead>
+            <tbody>
+              {% for o in food_orders %}
+              <tr>
+                <td>#{{ o.id }}</td>
+                <td>₹{{ "%.0f"|format(o.total_amount) }}</td>
+                <td><span class="badge badge-{{ o.status }}">{{ o.status.title() }}</span></td>
+                <td>{{ o.created_at.strftime('%d %b %H:%M') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <p>No orders yet.</p>
+          <a href="{{ url_for('main.food') }}" class="btn btn-sm btn-primary">Order Food</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Activity Bookings #}
+      <div class="dash-card">
+        <div class="card-header">
+          <h3>Activity Bookings</h3>
+          <a href="{{ url_for('main.activities') }}" class="card-link">+ Book</a>
+        </div>
+        {% if activity_bookings %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Activity</th><th>Date</th><th>Guests</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for a in activity_bookings %}
+              <tr>
+                <td>{{ a.activity_type }}</td>
+                <td>{{ a.preferred_date.strftime('%d %b') }} {{ a.preferred_time }}</td>
+                <td>{{ a.guests_count }}</td>
+                <td><span class="badge badge-{{ a.status }}">{{ a.status.title() }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <p>No activities booked.</p>
+          <a href="{{ url_for('main.activities') }}" class="btn btn-sm btn-primary">Book Activity</a>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Service Requests #}
+      <div class="dash-card">
+        <div class="card-header">
+          <h3>Service Requests</h3>
+          <a href="{{ url_for('main.services') }}" class="card-link">+ Request</a>
+        </div>
+        {% if service_requests %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Type</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for r in service_requests %}
+              <tr>
+                <td>{{ r.service_type.replace('_', ' ').title() }}</td>
+                <td><span class="badge badge-{{ r.priority }}">{{ r.priority.title() }}</span></td>
+                <td><span class="badge badge-{{ r.status }}">{{ r.status.replace('_', ' ').title() }}</span></td>
+                <td>{{ r.created_at.strftime('%d %b') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <p>No service requests.</p>
+          <a href="{{ url_for('main.services') }}" class="btn btn-sm btn-primary">Request Service</a>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>{# end dash-grid #}
+
+  </main>
+</div>
+{% endblock %}

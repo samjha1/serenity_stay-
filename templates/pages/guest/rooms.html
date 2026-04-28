@@ -1,0 +1,113 @@
+{#
+  pages/guest/rooms.html
+  ───────────────────────
+  Browse and filter available rooms. Guests can pick dates, room type,
+  and proceed to the booking form from this view.
+
+  Context variables: rooms, room_type, check_in, check_out
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Browse Rooms{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'rooms' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Available Rooms</h1>
+        <p class="dash-sub">Choose your perfect accommodation.</p>
+      </div>
+    </div>
+
+    {# ── Filter / search bar ── #}
+    <div class="filter-bar">
+      <form method="GET" action="{{ url_for('main.rooms') }}" class="filter-form">
+        <div class="filter-item">
+          <label>Room Type</label>
+          <select name="room_type" class="form-input">
+            <option value="">All Types</option>
+            {% for t in ['standard', 'deluxe', 'suite', 'villa'] %}
+            <option value="{{ t }}" {% if room_type == t %}selected{% endif %}>
+              {{ t.title() }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>Check-in</label>
+          <input type="date" name="check_in" class="form-input" value="{{ check_in }}" />
+        </div>
+        <div class="filter-item">
+          <label>Check-out</label>
+          <input type="date" name="check_out" class="form-input" value="{{ check_out }}" />
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+
+    {# ── Room cards grid ── #}
+    {% if rooms %}
+    <div class="rooms-grid-dash">
+      {% for room in rooms %}
+      <div class="room-card-dash">
+
+        <div class="rcd-img">
+          {% set img = (room.image_path or 'images/room1.jpg')
+            |replace('images/room-standard.svg', 'images/room1.jpg')
+            |replace('images/room-deluxe.svg',   'images/room3.jpg')
+            |replace('images/room-suite.svg',    'images/room5.jpg')
+            |replace('images/room-villa.svg',    'images/room7.jpg') %}
+          <img src="{{ url_for('static', filename=img) }}" alt="Room {{ room.room_number }}" />
+          <div class="rcd-type-badge">{{ room.room_type.title() }}</div>
+          <div class="rcd-status {{ room.status }}">{{ room.status.title() }}</div>
+        </div>
+
+        <div class="rcd-body">
+          <div class="rcd-header">
+            <h3>Room {{ room.room_number }}</h3>
+            <div class="rcd-price">₹{{ "%.0f"|format(room.price_per_night) }}<span>/night</span></div>
+          </div>
+          <p class="rcd-desc">
+            {{ room.description or 'A beautifully appointed room with premium amenities.' }}
+          </p>
+          <div class="rcd-meta">
+            <span>🏢 Floor {{ room.floor }}</span>
+            <span>👥 {{ room.capacity }} Guests</span>
+          </div>
+          {% if room.amenities %}
+          <div class="room-features">
+            {% for a in room.amenities.split(',')[:4] %}
+            <span class="feature-tag">{{ a.strip() }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if room.status == 'available' %}
+          <a href="{{ url_for('main.book_room', room_id=room.id) }}{% if check_in %}?check_in={{ check_in }}&check_out={{ check_out }}{% endif %}"
+             class="btn btn-primary btn-full">Book Now</a>
+          {% else %}
+          <button class="btn btn-disabled btn-full" disabled>Not Available</button>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state large">
+      <div class="empty-icon">🛏</div>
+      <h3>No rooms available</h3>
+      <p>Try different filters or check back later.</p>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}

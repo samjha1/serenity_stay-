@@ -1,0 +1,36 @@
+{#
+  components/public_footer.html
+  ──────────────────────────────
+  Site-wide footer used on the public landing page.
+#}
+
+<footer class="footer">
+  <div class="footer-inner">
+
+    <div class="footer-brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">Serenity Stay</span>
+      <p>Crafting unforgettable experiences since 2010. Luxury beyond measure.</p>
+    </div>
+
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <a href="#home">Home</a>
+        <a href="#rooms">Rooms</a>
+        <a href="#instay">InStay</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h4>Account</h4>
+        <a href="{{ url_for('auth.register') }}">Register</a>
+        <a href="{{ url_for('auth.login') }}">Guest Login</a>
+        <a href="{{ url_for('auth.login') }}">Staff Portal</a>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer-bottom">
+    <p>© 2024 Serenity Stay Resort. All rights reserved.</p>
+  </div>
+</footer>

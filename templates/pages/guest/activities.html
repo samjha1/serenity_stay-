@@ -1,0 +1,124 @@
+{#
+  pages/guest/activities.html
+  ────────────────────────────
+  Guests book resort activities (diving, spa, island tour, etc.)
+  and view their pending/confirmed activity requests.
+
+  Context variables: bookings (activity records), today
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Activities{% endblock %}
+
+{% block body %}
+<div class="dash-layout">
+
+  {% set active_page = 'activities' %}
+  {% include "components/guest_sidebar.html" %}
+
+  <main class="dash-main">
+
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Resort Activities</h1>
+        <p class="dash-sub">Book experiences and get confirmation from the front desk.</p>
+      </div>
+    </div>
+
+    <div class="guest-hero-card">
+      <img src="{{ url_for('static', filename='images/beach.jpg') }}" alt="Activities" />
+      <div>
+        <h3>Adventure and wellness</h3>
+        <p>Your activity bookings are assigned to the front desk for scheduling and confirmation.</p>
+      </div>
+    </div>
+
+    <div class="services-layout">
+
+      {# ── Booking form ── #}
+      <div class="glass-card">
+        <h3>Book Activity</h3>
+        <form method="POST"
+              action="{{ url_for('main.book_activity') }}"
+              onsubmit="showLoading()">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Activity Type</label>
+              <select name="activity_type" class="form-input" required>
+                <option value="">Select activity...</option>
+                <option value="Scuba Diving">Scuba Diving</option>
+                <option value="Sunset Cruise">Sunset Cruise</option>
+                <option value="Spa Therapy">Spa Therapy</option>
+                <option value="Yoga Session">Yoga Session</option>
+                <option value="Island Tour">Island Tour</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Guests</label>
+              <input type="number" name="guests_count" min="1" max="10"
+                     value="1" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Preferred Date</label>
+              <input type="date" name="preferred_date"
+                     min="{{ today }}" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Preferred Time</label>
+              <select name="preferred_time" class="form-input" required>
+                <option value="">Select slot...</option>
+                <option value="08:00 AM">08:00 AM</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="02:00 PM">02:00 PM</option>
+                <option value="04:00 PM">04:00 PM</option>
+                <option value="06:00 PM">06:00 PM</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-input" name="notes" rows="3"
+                      placeholder="Any preference or special requirement..."></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-full" type="submit">Book Activity</button>
+        </form>
+      </div>
+
+      {# ── Activity history card ── #}
+      <div class="dash-card">
+        <div class="card-header"><h3>Your Activity Requests</h3></div>
+        {% if bookings %}
+        <div class="request-list">
+          {% for a in bookings %}
+          <div class="request-item ri-{{ a.status }}">
+            <div class="ri-header">
+              <span class="ri-type">{{ a.activity_type }}</span>
+              <span class="badge badge-{{ a.status }}">{{ a.status.title() }}</span>
+            </div>
+            <p class="ri-desc">
+              {{ a.preferred_date.strftime('%d %b %Y') }} at {{ a.preferred_time }}
+              for {{ a.guests_count }} guest(s)
+            </p>
+            <div class="ri-meta">
+              <span>{{ a.notes or 'No notes provided.' }}</span>
+              <span class="ri-date">{{ a.created_at.strftime('%d %b %H:%M') }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><p>No activity bookings yet.</p></div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </main>
+</div>
+{% endblock %}

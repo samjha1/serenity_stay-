@@ -1,0 +1,96 @@
+{#
+  pages/public/register.html
+  ───────────────────────────
+  Split-panel guest registration page.
+  Left: resort hero image. Right: account creation form.
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Register{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+
+  {# ── Left decorative panel ── #}
+  <div class="auth-left">
+    <img src="{{ url_for('static', filename='images/hero.png') }}"
+         alt="Resort" class="auth-bg-img" />
+    <div class="auth-overlay"></div>
+    <div class="auth-left-content">
+      <a href="{{ url_for('main.index') }}" class="auth-logo">
+        <span class="brand-icon">✦</span>
+        <span class="brand-name">Serenity Stay</span>
+      </a>
+      <blockquote class="auth-quote">
+        "Join a world of luxury, comfort and timeless memories."
+      </blockquote>
+    </div>
+  </div>
+
+  {# ── Right form panel ── #}
+  <div class="auth-right">
+    <div class="auth-box">
+      <h2 class="auth-title">Create Account</h2>
+      <p class="auth-sub">Begin your Serenity Stay journey today</p>
+
+      <form method="POST"
+            action="{{ url_for('auth.register') }}"
+            onsubmit="return validateRegister();">
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" name="name" class="form-input"
+                 placeholder="John Doe" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" name="email" class="form-input"
+                 placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" name="phone" class="form-input"
+                 placeholder="+91 9876543210" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-input"
+                 id="reg_pwd" placeholder="Min. 6 characters" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" name="confirm_password" class="form-input"
+                 id="reg_cpwd" placeholder="Repeat password" required />
+        </div>
+
+        <div id="pwd-error" class="form-error" style="display:none">
+          Passwords do not match.
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+{% block extra_js %}
+<script>
+  function validateRegister() {
+    var p   = document.getElementById('reg_pwd').value;
+    var c   = document.getElementById('reg_cpwd').value;
+    var err = document.getElementById('pwd-error');
+    if (p !== c) { err.style.display = 'block'; return false; }
+    if (p.length < 6) { alert('Password must be at least 6 characters.'); return false; }
+    err.style.display = 'none';
+    showLoading();
+    return true;
+  }
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,76 @@
+{#
+  components/staff_sidebar.html
+  ──────────────────────────────
+  Reusable left sidebar for all authenticated staff pages.
+  Navigation links are conditionally shown based on the staff role.
+
+  Required context variables:
+    - active_page  : string key matching the current section
+                     ('dashboard' | 'bookings' | 'rooms' | 'activities' |
+                      'food_orders' | 'service_requests')
+    - current_user : Flask-Login current user object (has .role and .name)
+#}
+
+<aside class="sidebar sidebar-staff">
+
+  {# ── Brand logo ── #}
+  <div class="sidebar-brand">
+    <a href="{{ url_for('main.index') }}">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">Serenity Stay</span>
+    </a>
+  </div>
+
+  {# ── Role-aware navigation ── #}
+  <nav class="sidebar-nav">
+
+    <a href="{{ url_for('staff.dashboard') }}"
+       class="snav-item {% if active_page == 'dashboard' %}active{% endif %}">
+      <span class="sn-icon">📊</span> Dashboard
+    </a>
+
+    {# Front desk + admin see booking/room/activity management #}
+    {% if current_user.role in ('admin', 'frontdesk') %}
+    <a href="{{ url_for('staff.bookings') }}"
+       class="snav-item {% if active_page == 'bookings' %}active{% endif %}">
+      <span class="sn-icon">📋</span> Bookings
+    </a>
+    <a href="{{ url_for('staff.rooms') }}"
+       class="snav-item {% if active_page == 'rooms' %}active{% endif %}">
+      <span class="sn-icon">🛏</span> Rooms
+    </a>
+    <a href="{{ url_for('staff.activities') }}"
+       class="snav-item {% if active_page == 'activities' %}active{% endif %}">
+      <span class="sn-icon">🎯</span> Activities
+    </a>
+    {% endif %}
+
+    {# Kitchen + admin see food orders #}
+    {% if current_user.role in ('admin', 'kitchen') %}
+    <a href="{{ url_for('staff.food_orders') }}"
+       class="snav-item {% if active_page == 'food_orders' %}active{% endif %}">
+      <span class="sn-icon">🍽</span> Food Orders
+    </a>
+    {% endif %}
+
+    {# Housekeeping + admin see service requests #}
+    {% if current_user.role in ('admin', 'housekeeping') %}
+    <a href="{{ url_for('staff.service_requests') }}"
+       class="snav-item {% if active_page == 'service_requests' %}active{% endif %}">
+      <span class="sn-icon">🛎</span> Service Requests
+    </a>
+    {% endif %}
+
+  </nav>
+
+  {# ── Logged-in staff footer ── #}
+  <div class="sidebar-user">
+    <div class="user-avatar staff-avatar">{{ current_user.name[0].upper() }}</div>
+    <div class="user-info">
+      <span class="user-name">{{ current_user.name }}</span>
+      <span class="user-role">{{ current_user.role.replace('_', ' ').title() }}</span>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Logout">↪</a>
+  </div>
+
+</aside>

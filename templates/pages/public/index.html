@@ -1,0 +1,205 @@
+{#
+  pages/public/index.html
+  ────────────────────────
+  Public-facing landing page. Shown to unauthenticated visitors.
+  Sections: hero → rooms showcase → InStay experiences → contact form → footer.
+#}
+
+{% extends "base/layout.html" %}
+{% block title %}Welcome{% endblock %}
+
+{% block body %}
+
+{% include "components/public_navbar.html" %}
+
+{# ─── Hero Section ─── #}
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <img src="{{ url_for('static', filename='/images/hero.png') }}"
+         alt="Resort" class="hero-img" />
+    <div class="hero-overlay"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">Luxury Redefined</div>
+    <h1 class="hero-title">Where Every Moment<br />Becomes a Memory</h1>
+    <p class="hero-sub">
+      Nestled in paradise — world-class suites, gourmet dining, and unparalleled
+      service await you.
+    </p>
+    <div class="hero-cta">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Reserve Your Stay</a>
+      <a href="#rooms" class="btn btn-ghost btn-lg">Explore Rooms</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">48</span><span class="stat-label">Luxury Suites</span></div>
+      <div class="stat"><span class="stat-num">4.9★</span><span class="stat-label">Guest Rating</span></div>
+      <div class="stat"><span class="stat-num">24/7</span><span class="stat-label">Concierge</span></div>
+    </div>
+  </div>
+  <div class="hero-scroll"><div class="scroll-indicator"></div></div>
+</section>
+
+{# ─── Room Type Showcase ─── #}
+<section class="rooms-section" id="rooms">
+  <div class="section-header">
+    <div class="section-tag">Accommodations</div>
+    <h2 class="section-title">Curated Spaces for<br />Refined Living</h2>
+    <p class="section-sub">
+      Each room is a sanctuary — thoughtfully designed with the finest materials
+      and unmatched comfort.
+    </p>
+  </div>
+
+  <div class="rooms-grid">
+    {% set room_types = [
+      {
+        "type": "Standard", "price": "₹8,500", "icon": "◈", "image": "images/room1.jpg",
+        "desc": "Elegant comfort with city views, king bed, and premium amenities.",
+        "features": ["King Bed", "City View", "WiFi", "Mini Bar"]
+      },
+      {
+        "type": "Deluxe", "price": "₹14,500", "icon": "◉", "image": "images/room3.jpg",
+        "desc": "Expansive deluxe rooms with private balcony and ocean-facing views.",
+        "features": ["King Bed", "Balcony", "Ocean View", "Butler Service"]
+      },
+      {
+        "type": "Suite", "price": "₹24,000", "icon": "✦", "image": "images/room5.jpg",
+        "desc": "Opulent suites with separate living space and curated luxury touches.",
+        "features": ["2 Rooms", "Living Area", "Jacuzzi", "Private Terrace"]
+      },
+      {
+        "type": "Villa", "price": "₹28,000", "icon": "⌂", "image": "images/room7.jpg",
+        "desc": "Ultimate privacy in your own villa — pool, garden, and bespoke service.",
+        "features": ["Private Pool", "Garden", "Full Kitchen", "Personal Chef"]
+      }
+    ] %}
+
+    {% for room in room_types %}
+    <div class="room-card">
+      <div class="room-card-img">
+        <img src="{{ url_for('static', filename=room.image) }}" alt="{{ room.type }}" />
+        <div class="room-card-badge">{{ room.icon }} {{ room.type }}</div>
+      </div>
+      <div class="room-card-body">
+        <div class="room-card-price">From <strong>{{ room.price }}</strong> / night</div>
+        <p class="room-card-desc">{{ room.desc }}</p>
+        <div class="room-features">
+          {% for f in room.features %}
+          <span class="feature-tag">{{ f }}</span>
+          {% endfor %}
+        </div>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-sm">Book This Room</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ─── InStay Experiences Section ─── #}
+<section class="instay-section" id="instay">
+  <div class="instay-inner">
+    <div class="section-header light">
+      <div class="section-tag">InStay Experience</div>
+      <h2 class="section-title">Life at Serenity Stay</h2>
+      <p class="section-sub">Beyond the room — a world of curated experiences awaits every guest.</p>
+    </div>
+
+    <div class="instay-grid">
+      {% set activities = [
+        { "icon": "🍽️", "title": "Fine Dining",      "desc": "Five-star cuisine crafted by Michelin-trained chefs.",  "image": "images/finedine.jpg" },
+        { "icon": "🧖",  "title": "Wellness Spa",     "desc": "Rejuvenate with holistic spa treatments.",              "image": "images/wellnessspa.jpg" },
+        { "icon": "🏊",  "title": "Infinity Pool",    "desc": "Swim with panoramic luxury views.",                     "image": "images/infinitypool.jpg" },
+        { "icon": "🎭",  "title": "Live Events",      "desc": "Music, cultural shows, cocktail evenings.",             "image": "images/live event.jpeg" },
+        { "icon": "🚗",  "title": "Valet & Transfers","desc": "Airport transfers & luxury cars.",                      "image": "images/velet.jpg" },
+        { "icon": "🛎️", "title": "24/7 Concierge",   "desc": "Personalized service anytime.",                        "image": "images/service24.jpg" }
+      ] %}
+
+      {% for act in activities %}
+      <div class="instay-card">
+        <img src="{{ url_for('static', filename=act.image) }}"
+             alt="{{ act.title }}" class="instay-img" />
+        <div class="instay-overlay">
+          <div class="instay-icon">{{ act.icon }}</div>
+          <h3>{{ act.title }}</h3>
+          <p>{{ act.desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# InStay section styles are scoped here to avoid polluting the global stylesheet #}
+<style>
+.instay-section { padding: 80px 20px; background: #0f172a; }
+.instay-inner   { max-width: 1200px; margin: auto; }
+.section-header { text-align: center; margin-bottom: 50px; }
+.section-title  { font-size: 32px; color: #fff; }
+.section-sub    { color: #cbd5e1; }
+.instay-grid    { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+.instay-card    { position: relative; overflow: hidden; border-radius: 16px; height: 280px; cursor: pointer; }
+.instay-img     { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+.instay-card:hover .instay-img { transform: scale(1.1); }
+.instay-overlay { position: absolute; bottom: 0; width: 100%; padding: 20px; color: #fff; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
+.instay-icon    { font-size: 24px; margin-bottom: 8px; }
+.instay-overlay h3 { margin: 0; font-size: 18px; }
+.instay-overlay p  { font-size: 14px; opacity: 0.9; }
+</style>
+
+{# ─── Contact Section ─── #}
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+
+    <div class="contact-info">
+      <div class="section-tag">Get In Touch</div>
+      <h2 class="section-title">We'd Love to Hear<br />from You</h2>
+      <div class="contact-details">
+        <div class="contact-item">
+          <span class="ci-icon">📍</span>
+          <div><strong>Address</strong><p>Serenity Stay, Karnataka, INDIA</p></div>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">📞</span>
+          <div><strong>Phone</strong><p>+91 XXXXXXXXXX</p></div>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">✉️</span>
+          <div><strong>Email</strong><p>XXX@serenitystay.com</p></div>
+        </div>
+        <div class="contact-item">
+          <span class="ci-icon">⏰</span>
+          <div><strong>Check-in / Check-out</strong><p>2:00 PM / 11:00 AM</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form-wrap">
+      <form class="contact-form"
+            action="{{ url_for('main.submit_contact') }}"
+            method="POST"
+            onsubmit="handleContactForm(event)">
+        <h3>Send a Message</h3>
+        <div class="form-group">
+          <input type="text"  name="name"    placeholder="Your Name"      class="form-input" required />
+        </div>
+        <div class="form-group">
+          <input type="email" name="email"   placeholder="Email Address"  class="form-input" required />
+        </div>
+        <div class="form-group">
+          <input type="text"  name="subject" placeholder="Subject"        class="form-input" />
+        </div>
+        <div class="form-group">
+          <textarea name="message" placeholder="Your message..." class="form-input" rows="4" required></textarea>
+        </div>
+        <div class="contact-error"   style="display:none; color:#f87171; font-size:0.85rem; margin-bottom:0.75rem;"></div>
+        <div class="contact-success" style="display:none; color:#4ade80; font-size:0.85rem; margin-bottom:0.75rem;"></div>
+        <button type="submit" class="btn btn-primary btn-full">Send Message</button>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+{% include "components/public_footer.html" %}
+
+{% endblock %}
